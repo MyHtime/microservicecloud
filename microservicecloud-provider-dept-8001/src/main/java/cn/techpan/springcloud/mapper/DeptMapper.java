@@ -11,7 +11,7 @@ import java.util.List;
 @Mapper
 public interface DeptMapper {
 
-    @Insert("insert into dept (#{dept_name}, #{database_source}) values (deptName, database())")
+    @Insert("insert into dept (dept_name, database_source) values (#{deptName}, database())")
     boolean addDept(Dept dept);
 
     @Select("select * from dept where dept_no = #{deptNo}")
