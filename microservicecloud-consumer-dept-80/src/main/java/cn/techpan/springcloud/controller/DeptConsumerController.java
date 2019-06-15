@@ -42,4 +42,12 @@ public class DeptConsumerController {
     public List<Dept> list() {
         return restTemplate.getForObject(REST_URL_PREFIX + "/dept/list", List.class);
     }
+
+    /**
+     * 测试@EnableDiscoveryClient，消费者可以调用服务发现
+     */
+    @GetMapping("/discovery")
+    public Object discovery() {
+        return restTemplate.getForObject(REST_URL_PREFIX + "dept/discovery", Object.class);
+    }
 }

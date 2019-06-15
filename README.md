@@ -169,3 +169,41 @@ info:
 > - 4 **eureka自我保护**
 > - 4.1 某时刻某一个微服务不可用了，eureka不会立即清理，以旧会对该微服务的信息进行保存
 > - 4.2 在自我保护模式中，EurekaServer会保护注册表中的信息，不再注销任何服务实例。当它收到的心跳数重新恢复到阈值以上时，该EurekaServer节点就会自动退出自我保护模式（它的设计哲学就是宁可保留错误的服务注册信息，也不盲目注销任何可能健康的服务实例）
+> - 5 服务发现(not important)
+> - 5.1 对于在Eureka注册的微服务，可以用服务发现来获得该服务的信息
+> - 5.2 修改8001的DeptController(添加服务发现接口)
+```java
+    @Autowired
+    private DiscoveryClient discoveryClient;
+
+    @GetMapping("/discovery")
+    public Object discovery() {
+        //所有微服务
+        List<String> serviceList = discoveryClient.getServices();
+        System.out.println("**********" + serviceList);
+        //部门微服务
+        List<ServiceInstance> instances = discoveryClient.getInstances("MICROSERVICECLOUD-DEPT");
+        for (ServiceInstance instance : instances) {
+            System.out.println(instance.getServiceId() + "\t" + instance.getHost() + "\t" + instance.getPort() + "\t" + instance.getUri());
+        }
+        return this.discoveryClient;
+    }
+```
+> - 5.3 修改 8001 DeptProvider8001_App
+```java
+/**
+ * 开启EnableDiscoveryClient支持
+ * 服务发现
+ */
+@EnableDiscoveryClient
+```
+> - 5.4 修改 80 DeptConsumerController
+```java
+    /**
+     * 测试@EnableDiscoveryClient，消费者可以调用服务发现
+     */
+    @GetMapping("/discovery")
+    public Object discovery() {
+        return restTemplate.getForObject(REST_URL_PREFIX + "dept/discovery", Object.class);
+    }
+```
