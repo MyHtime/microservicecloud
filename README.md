@@ -75,3 +75,40 @@ public class EurekaServer7001_App {
     }
 }
 ```
+> - **服务注册(Eureka Client)**
+> - 引入组件(8001)
+```xml
+<!--Eureka client-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-eureka</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-config</artifactId>
+</dependency>
+<!--Eureka client-->
+```
+> 配置文件(8001)
+```yaml
+eureka:
+  client:  #将客户端服务注册到Eureka服务列表类
+    service-url:
+      defaultZone: http://localhost:7001/eureka
+```
+> - Java注解(8001)
+
+```java
+/**
+ * 开启EnableEurekaClient支持
+ * 服务启动后会自动注册进eureka服务中
+ */
+@EnableEurekaClient
+@SpringBootApplication
+public class DeptProvider8001_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeptProvider8001_App.class, args);
+    }
+}
+```
