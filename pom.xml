@@ -83,4 +83,25 @@
         </dependencies>
     </dependencyManagement>
 
+    <build> <!--build构建信息-->
+        <finalName>${name}</finalName> <!--finalName：当前工程名称-->
+        <resources> <!--resources：资源-->
+            <resource> <!--resource：运行访问所有src/main/resource文件夹下的内容-->
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering> <!--filtering：过滤-->
+            </resource>
+        </resources>
+        <plugins> <!--plugins：插件-->
+            <plugin> <!--plugin：解析-->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <delimiters> <!--delimiters：以$开头，$结尾的(配置)文件信息可以访问、读取,这里$$失效，用${project.version}替代-->
+                        <delimit>$</delimit>
+                    </delimiters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
