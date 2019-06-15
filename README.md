@@ -166,3 +166,6 @@ info:
   build.artifactId: ${project.artifactId}
   build.version: ${project.version}
 ```
+> - 4 **eureka自我保护**
+> - 4.1 某时刻某一个微服务不可用了，eureka不会立即清理，以旧会对该微服务的信息进行保存
+> - 4.2 在自我保护模式中，EurekaServer会保护注册表中的信息，不再注销任何服务实例。当它收到的心跳数重新恢复到阈值以上时，该EurekaServer节点就会自动退出自我保护模式（它的设计哲学就是宁可保留错误的服务注册信息，也不盲目注销任何可能健康的服务实例）
