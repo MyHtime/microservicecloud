@@ -207,3 +207,58 @@ info:
         return restTemplate.getForObject(REST_URL_PREFIX + "dept/discovery", Object.class);
     }
 ```
+> - 6 **Eureka集群**
+> - 6.1  集群的意思就是将一个应用程序，部署到多台服务器上面
+> - 6.1.1 [参考1](https://blog.csdn.net/zuoyanyouyan/article/details/81044379)
+> - 6.1.2 [参考2](https://blog.csdn.net/jiangyu1013/article/details/80417961)
+> - 6.1.3 [参考3](https://blog.csdn.net/zhou2s_101216/article/details/51707270)
+> - 6.2 集群步骤
+> - 6.2.1 maven方式建立多个Eureka Server (port:7001,7002,7003,...)
+> - 6.2.2 配置Eureka Server的application.yml文件
+```yaml
+server:
+  port: 700x
+eureka:
+  instance:
+    hostname: eureka700x.com
+  client:
+    register-with-eureka: false
+    fetch-registry: false 
+    service-url:
+      defaultZone: http://eureka700a.com:700a/eureka/,http://eureka700b.com:700c/eureka/
+      # a != b != x (1,2,3,...)
+```
+> - 6.2.3 编写启动类
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+
+/**
+ * 开启EnableEurekaServer支持
+ * EurekaServer服务端启动类，接收其他微服务注册进来
+ * x 为 1,2,3,...
+ */
+@EnableEurekaServer
+@SpringBootApplication
+public class EurekaServer700x_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(EurekaServer700x_App.class, args);
+    }
+}
+```
+> - 6.2.4 修改微服务提供者的application.yml文件
+```yaml
+eureka:
+  client:  #将客户端服务注册到Eureka服务列表类
+    service-url:
+      defaultZone: http://eureka700a.com:700a/eureka/,http://eureka700b.com:700b/eureka/
+      # a, b 为1,2,3,...
+```
+> - 6.2.5 单台机器需要修改hosts文件来配置集群(非必须)：在hosts文件增加
+```
+127.0.0.1   eureka7001.com
+127.0.0.1   eureka7002.com
+127.0.0.1   eureka7003.com
+```
