@@ -27,12 +27,12 @@ public class ConfigBean {
         return new RestTemplate();
     }
 
-    /**
-     * 设置负载均衡算法
-     * 未定时，采用RoundRobinRule-轮询
-     */
-    @Bean
-    public IRule getIRule() {
-        return new RandomRule();
-    }
+//    /**
+//     * 设置负载均衡算法
+//     * 未定时，采用RoundRobinRule-轮询
+//     */
+//    @Bean
+//    public IRule getIRule() {
+//        return new RandomRule();
+//    }
 }
