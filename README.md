@@ -275,6 +275,7 @@ eureka:
 > - 7.7.4 因此， Eureka可以很好的应对因网络故障导致部分节点失去联系的情况，而不会像zookeeper那样使整个注册服务瘫痪
 > - 8 负载均衡nginx、Ribbon、Feign
 > - **9 Ribbon 负载均衡**
+> - [Ribbon](https://github.com/Netflix/ribbon/wiki/Getting-Started)
 > - 9.1 Spring Cloud Ribbon是基于Netflix Ribbon实现的一套**客户端       负载均衡**的工具
 > - 9.1.1 简单的说，Ribbon是Netflix发布的开源项目，主要功能是提供客户端的软件负载均衡算法，将Netflix的中间层服务连接在一起。Ribbon客户端组件提供一系列完善的配置项如连接超时，重试等。简单的说，就是在配置文件中列出Load Balancer（简称LB）后面所有的机器，Ribbon会自动的帮助你基于某种规则（如简单轮询，随机连接等）去连接这些机器。我们也很容易使用Ribbon实现自定义的负载均衡算法
 > - 9.2 LB，即负载均衡(Load Balance)，在微服务或分布式集群中经常用的一种应用。
@@ -352,3 +353,27 @@ eureka:
 ```
 > - 9.4.5 完成三个相同服务提供者的主启动类
 > - 9.4.6 启动多个EurekaServer，启动服务提供者，启动消费者
+> - 9.5 **Ribbon核心组件IRule**
+> - 9.5.1 IRule：根据特定算法中从服务列表中选取一个要访问的服务
+> - 9.5.2 内置算法
+> - 9.5.2.1 **RoundRobinRule**(轮询)
+> - 9.5.2.2 **RandomRule**(随机)
+> - 9.5.2.3 AvailabilityFilteringRule(会先过滤掉由于多次访问故障而处于断路器跳闸状态的服务，
+还有并发的连接数量超过阈值的服务，然后对剩余的服务列表按照轮询策略进行访问)
+> - 9.5.2.4 WeightedResponseTimeRule(根据平均响应时间计算所有服务的权重，响应时间越快服务权重越大被选中的概率越高。
+刚启动时如果统计信息不足，则使用RoundRobinRule策略，等统计信息足够，
+会切换到WeightedResponseTimeRule)
+> - 9.5.2.5 **RetryRule**(先按照RoundRobinRule的策略获取服务，如果获取服务失败则在指定时间内会进行重试，获取可用的服务)
+> - 9.5.2.6 BestAvailableRule(会先过滤掉由于多次访问故障而处于断路器跳闸状态的服务，然后选择一个并发量最小的服务)
+> - 9.5.2.7 ZoneAvoidanceRule(默认规则,复合判断server所在区域的性能和server的可用性选择服务器)
+> - 9.5.3 配置，在客户端的配置类里注入IRule
+```java
+/**
+ * 设置负载均衡算法
+ * 未定时，采用RoundRobinRule-轮询
+ */
+@Bean
+public IRule getIRule() {
+    return new RoundRobinRule();
+}
+```
