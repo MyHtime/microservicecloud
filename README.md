@@ -327,3 +327,28 @@ eureka:
     private static final String REST_URL_PREFIX = "http://MICROSERVICECLOUD-DEPT";
 ```
 > - 9.3.6 Ribbon和Eureka整合后Consumer可以直接调用服务而不用再关心地址和端口号(即9.3.5)
+> - **9.4 Ribbon负载均衡**
+> - 9.4.1 Ribbon在工作时分成两步<br>
+第一步先选择 EurekaServer ,它优先选择在同一个区域内负载较少的server.<br>
+第二步再根据用户指定的策略，在从server取到的服务注册列表中选择一个地址。<br>
+其中Ribbon提供了多种策略：比如轮询、随机和根据响应时间加权。<br>
+> - 9.4.2 创建同一个微服务服务提供者(多端口)8001,8002,8003,...
+> - 9.4.3 创建每个服务对应的数据库clouddb01,clouddb02,clouddb03,...
+> - 9.4.4 配置各自的application.yml
+```yaml
+# 端口800x
+server:
+  port: 800x #x端口 1,2,3,...
+spring:
+  application:
+    name: microservicecloud-dept    #对外暴露的微服务名字,三个服务保持一致
+eureka:
+  client:  #将客户端服务注册到Eureka服务列表类
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+  instance:
+    instance-id: microservicecloud-dept800x #自定义服务名称信息(x=1,2,3,...)
+    prefer-ip-address: true                 #访问路径可以显示IP地址
+```
+> - 9.4.5 完成三个相同服务提供者的主启动类
+> - 9.4.6 启动多个EurekaServer，启动服务提供者，启动消费者
