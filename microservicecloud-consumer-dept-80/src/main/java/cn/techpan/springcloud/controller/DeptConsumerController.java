@@ -17,7 +17,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/consumer/dept")
 public class DeptConsumerController {
-    private static final String REST_URL_PREFIX = "http://localhost:8001";
+    //private static final String REST_URL_PREFIX = "http://localhost:8001";
+    /**
+     * 通过微服务名访问，实现负载均衡
+     */
+    private static final String REST_URL_PREFIX = "http://MICROSERVICECLOUD-DEPT";
 
     /**
      * 使用RestTemplate访问restful接口很easy，三个参数(String url, Object request, Class<T> responseType)

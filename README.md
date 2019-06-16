@@ -272,4 +272,58 @@ eureka:
 7.7.3.2.1 Eureka不再从注册列表中移除因为长时间没收到心跳而应该过期的服务 <br>
 7.7.3.2.2 Eureka仍然能够接受新服务的注册和查询请求，但是不会被同步到其它节点上(即保证当前节点依然可用) <br>
 7.7.3.2.3 当网络稳定时，当前实例新的注册信息会被同步到其它节点中
-> 7.7.4 因此， Eureka可以很好的应对因网络故障导致部分节点失去联系的情况，而不会像zookeeper那样使整个注册服务瘫痪
+> - 7.7.4 因此， Eureka可以很好的应对因网络故障导致部分节点失去联系的情况，而不会像zookeeper那样使整个注册服务瘫痪
+> - 8 负载均衡nginx、Ribbon、Feign
+> - **9 Ribbon 负载均衡**
+> - 9.1 Spring Cloud Ribbon是基于Netflix Ribbon实现的一套**客户端       负载均衡**的工具
+> - 9.1.1 简单的说，Ribbon是Netflix发布的开源项目，主要功能是提供客户端的软件负载均衡算法，将Netflix的中间层服务连接在一起。Ribbon客户端组件提供一系列完善的配置项如连接超时，重试等。简单的说，就是在配置文件中列出Load Balancer（简称LB）后面所有的机器，Ribbon会自动的帮助你基于某种规则（如简单轮询，随机连接等）去连接这些机器。我们也很容易使用Ribbon实现自定义的负载均衡算法
+> - 9.2 LB，即负载均衡(Load Balance)，在微服务或分布式集群中经常用的一种应用。
+负载均衡简单的说就是将用户的请求平摊的分配到多个服务上，从而达到系统的HA<br>
+常见的负载均衡有软件Nginx，LVS，硬件 F5等。<br>
+相应的在中间件，例如：dubbo和SpringCloud中均给我们提供了负载均衡**，SpringCloud的负载均衡算法可以自定义。**<br>
+> - 9.2.1 集中式LB(偏硬件)即在服务的消费方和提供方之间使用独立的LB设施(可以是硬件，如F5, 也可以是软件，如nginx), 由该设施负责把访问请求通过某种策略转发至服务的提供方；
+> - 9.2.2 进程内LB：将LB逻辑集成到消费方，消费方从服务注册中心获知有哪些地址可用，然后自己再从这些地址中选择出一个合适的服务器。<br>
+**Ribbon就属于进程内LB**，它只是一个类库，集成于消费方进程，消费方通过它来获取到服务提供方的地址。
+> - 9.3 Ribbon配置初步
+> - 9.3.1 80修改pom.xml
+```xml
+<!--Ribbon-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-eureka</artifactId>
+</dependency>
+<!--Ribbon相关-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-ribbon</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-config</artifactId>
+</dependency>
+```
+> - 9.3.2 80修改application.xml,追加eureka的服务注册地址
+```yaml
+eureka:
+  client:
+    register-with-eureka: false
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+```
+> - 9.3.3 80开启负载均衡支持
+```java
+/**
+ * Ribbon是客户端的负载均衡。因为80是客户端，通过RestTemplate去消费服务。如想具有负载均衡能，则需要要开启负载均衡，就需要让RestTemplate开启负载均衡@LoadBalanced
+ * 在getRestTemplate()追加注解@LoadBalanced
+ */
+```
+> - 9.3.4 80主启动类添加@EnableEurekaClient
+> - 9.3.5 80修改客户端访问类DeptConsumerController
+```java
+    //private static final String REST_URL_PREFIX = "http://localhost:8001";
+    /**
+     * 通过微服务名访问，实现负载均衡
+     */
+    private static final String REST_URL_PREFIX = "http://MICROSERVICECLOUD-DEPT";
+```
+> - 9.3.6 Ribbon和Eureka整合后Consumer可以直接调用服务而不用再关心地址和端口号(即9.3.5)
