@@ -486,3 +486,205 @@ Feign可以与Eureka和Ribbon组合使用以支持负载均衡。
 > - 10.3.2 但是在实际开发中，由于对服务依赖的调用可能不止一处，往往**一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。**
 > - 10.3.3 所以，Feign在此基础上做了进一步封装，由他来帮助我们定义和实现依赖服务接口的定义。
 > - 10.3.4 在Feign的实现下，我们**只需创建一个接口并使用注解的方式来配置它(以前是Dao接口上面标注Mapper注解,现在是一个微服务接口上面标注一个Feign注解即可)**，即可完成对服务提供方的接口绑定，简化了使用Spring cloud Ribbon时，自动封装服务调用客户端的开发量
+> - 10.4.1 创建maven module microservicecloud-consumer-dept-feign-80
+> - 10.4.2 修改pom文件
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>microservicecloud</artifactId>
+        <groupId>cn.techpan.springcloud</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>microservicecloud-consumer-dept-feign-80</artifactId>
+    <description>消费者feign</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.techpan.springcloud</groupId>
+            <artifactId>microservicecloud-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--eureka相关-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-eureka</artifactId>
+        </dependency>
+        <!--eureka相关-->
+        <!--feign相关-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-feign</artifactId>
+        </dependency>
+        <!--feign相关-->
+        <!--ribbon相关-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-ribbon</artifactId>
+        </dependency>
+        <!--ribbon相关-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!--热部署 修改后立即生效-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>springloaded</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
+```
+> - 10.4.3 创建配置文件application.yml
+```yaml
+server:
+  port: 80
+
+eureka:
+  client:
+    register-with-eureka: false
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+```
+> - 10.4.4 便于多处调用，可在api module 创建feign的调用接口（也可以直接在dept-feign-80创feign创建接口）
+> - 10.4.4.1 修改api的pom.xml，增加以下内容：
+```xml
+<dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-feign</artifactId>
+</dependency>
+```
+> - 10.4.4.2 新建DeptClientService接口
+```java
+import cn.techpan.springcloud.entity.Dept;
+import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.List;
+
+/**
+ * 开启FeignClient，完成对服务提供方的接口绑定
+ */
+@RequestMapping("/dept")
+@FeignClient(value = "MICROSERVICECLOUD-DEPT")
+public interface DeptClientService {
+
+    /**
+     * http://MICROSERVICECLOUD-DEPT/dept/add
+     */
+    @PostMapping("/add")
+    boolean add(Dept dept);
+
+    /**
+     * http://MICROSERVICECLOUD-DEPT/dept/get/id
+     */
+    @GetMapping("/get/{id}")
+    Dept get(@PathVariable("id") Long id);
+
+    /**
+     * http://MICROSERVICECLOUD-DEPT/dept/list
+     */
+    @GetMapping("/list")
+    List<Dept> list();
+}
+```
+> - 10.4.4.3 分别在（api工程下）执行以下两条maven命名
+```bash
+mvn clean
+mvn install
+```
+> - 10.4.5 在dept-feign-80创feign创建主启动类
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
+
+/**
+ * 开启EnableFeignClients的支持
+ * 扫描所有被@FeignClient标注的接口，并注入到IOC容器中，并可通过@Autowired的获取并调用服务
+ * 相对于Ribbon来说，feign更加符合面向接口编程，Ribbon是通过微服务名调用，feign是通过特定注解下的接口，更易于维护
+ * 同时，feign整合了Eureka和Ribbon
+ * Feign集成了Ribbon
+ * 利用Ribbon维护了MicroServiceCloud-Dept的服务列表信息，并且通过轮询实现了客户端的负载均衡。
+ * 而与Ribbon不同的是，通过feign只需要定义服务绑定接口且以声明式的方法，优雅而简单的实现了服务调用
+ */
+@EnableEurekaClient
+@SpringBootApplication
+@EnableFeignClients
+public class DeptConsumerFeign80_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeptConsumerFeign80_App.class, args);
+    }
+}
+```
+> - 10.4.6 在dept-feign-80创feign创建controller类
+```java
+import cn.techpan.springcloud.entity.Dept;
+import cn.techpan.springcloud.service.DeptClientService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/consumer/dept")
+public class DeptConsumerController {
+    //private static final String REST_URL_PREFIX = "http://localhost:8001";
+    /**
+     * Ribbon通过微服务名访问，实现负载均衡
+     */
+    //private static final String REST_URL_PREFIX = "http://MICROSERVICECLOUD-DEPT";
+
+    /**
+     * 通过feign接口调用微服务提供者，同时具有负载均衡
+     */
+    @Autowired
+    private DeptClientService deptClientService;
+
+    @PostMapping("/add")
+    public boolean add(Dept dept) {
+        return this.deptClientService.add(dept);
+    }
+
+    @GetMapping("/get/{id}")
+    public Dept get(@PathVariable("id") Long id) {
+        return this.deptClientService.get(id);
+    }
+
+    @GetMapping("/list")
+    public List<Dept> list() {
+        return this.deptClientService.list();
+    }
+
+}
+```
+> - 10.5 Feign集成了Ribbon
+<br>利用Ribbon维护了MicroServiceCloud-Dept的服务列表信息，并且通过轮询实现了客户端的负载均衡。
+<br>而与Ribbon不同的是，通过feign只需要定义服务绑定接口且以声明式的方法，优雅而简单的实现了服务调用
+> - 10.6 Feign通过接口的方法调用Rest服务（之前是Ribbon+RestTemplate）
+<br>该请求发送给Eureka服务器（http://MICROSERVICECLOUD-DEPT/dept/list）,
+通过Feign直接找到服务接口
+<br>由于在进行服务调用的时候融合了Ribbon技术，所以也支持负载均衡作用
+> - 10.7 同理，可使用修改Ribbon负载均衡算法的方式来修改feign的负载均衡算法
