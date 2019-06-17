@@ -228,7 +228,7 @@ eureka:
       defaultZone: http://eureka700a.com:700a/eureka/,http://eureka700b.com:700c/eureka/
       # a != b != x (1,2,3,...)
 ```
-> - 6.2.3 编写启动类
+> - 7.6.2.3 编写启动类
 ```java
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -248,7 +248,7 @@ public class EurekaServer700x_App {
     }
 }
 ```
-> - 6.2.4 修改微服务提供者的application.yml文件
+> - 7.6.2.4 修改微服务提供者的application.yml文件
 ```yaml
 eureka:
   client:  #将客户端服务注册到Eureka服务列表类
@@ -256,7 +256,7 @@ eureka:
       defaultZone: http://eureka700a.com:700a/eureka/,http://eureka700b.com:700b/eureka/
       # a, b 为1,2,3,...
 ```
-> - 6.2.5 单台机器需要修改hosts文件来配置集群(非必须)：在hosts文件增加
+> - 7.6.2.5 单台机器需要修改hosts文件来配置集群(非必须)：在hosts文件增加
 ```
 127.0.0.1   eureka7001.com
 127.0.0.1   eureka7002.com
@@ -471,4 +471,18 @@ public class CustomRibbonRule extends AbstractLoadBalancerRule {
     }
 }
 ```
-9.6.4 不能同时出现两种或多种负载均衡算法(故移除了80 ConfigBean.class中的public IRule getIRule()方法)
+> - 9.6.4 不能同时出现两种或多种负载均衡算法(故移除了80 ConfigBean.class中的public IRule getIRule()方法)
+- 10 Feign负载均衡
+> - 10.1 **Feign是一个声明式WebService客户端。**<br>
+使用Feign能让编写Web Service客户端更加简单, 它的使用方法是定义一个接口，然后在上面添加注解，同时也支持JAX-RS标准的注解。<br>
+Feign也支持可拔插式的编码器和解码器。<br>
+Spring Cloud对Feign进行了封装，使其支持了Spring MVC标准注解和HttpMessageConverters。<br>
+Feign可以与Eureka和Ribbon组合使用以支持负载均衡。
+> - 10.2 Feign是一个声明式的Web服务客户端，使得编写Web服务端变得非常容易（只需要创建一个接口，然后在上面添加注解即可。）
+> - 10.2.1 调用微服务可以使用微服务名字，也可以使用接口+注解（feign）
+> - 10.3 相对于Ribbon，Feign是面向接口编程，而Ribbon面向的是微服务。
+> - 10.3.1 Feign旨在使编写Java Http客户端变得更容易。
+前面在使用Ribbon+RestTemplate时，利用RestTemplate对http请求的封装处理，形成了一套模版化的调用方法。
+> - 10.3.2 但是在实际开发中，由于对服务依赖的调用可能不止一处，往往**一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。**
+> - 10.3.3 所以，Feign在此基础上做了进一步封装，由他来帮助我们定义和实现依赖服务接口的定义。
+> - 10.3.4 在Feign的实现下，我们**只需创建一个接口并使用注解的方式来配置它(以前是Dao接口上面标注Mapper注解,现在是一个微服务接口上面标注一个Feign注解即可)**，即可完成对服务提供方的接口绑定，简化了使用Spring cloud Ribbon时，自动封装服务调用客户端的开发量
