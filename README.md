@@ -706,3 +706,73 @@ public class DeptConsumerController {
 （1）熔断模式：这种模式主要是参考电路熔断，如果一条线路电压过高，保险丝会熔断，防止火灾。放到我们的系统中，如果某个目标服务调用慢或者有大量超时，此时，熔断该服务的调用，对于后续调用请求，不在继续调用目标服务，直接返回，快速释放资源。如果目标服务情况好转则恢复调用。<br>
 （2）隔离模式：这种模式就像对系统请求按类型划分成一个个小岛的一样，当某个小岛被火少光了，不会影响到其他的小岛。例如可以对不同类型的请求使用线程池来资源隔离，每种类型的请求互不影响，如果一种类型的请求线程资源耗尽，则对后续的该类型请求直接返回，不再调用后续资源。这种模式使用场景非常多，例如将一个服务拆开，对于重要的服务使用单独服务器来部署，再或者公司最近推广的多中心。<br>
 （3）限流模式：上述的熔断模式和隔离模式都属于出错后的容错处理机制，而限流模式则可以称为预防模式。限流模式主要是提前对各个类型的请求设置最高的QPS阈值，若高于设置的阈值则对该请求直接返回，不再调用后续资源。这种模式不能解决服务依赖的问题，只能解决系统整体资源分配问题，因为没有被限流的请求依然有可能造成雪崩效应。
+> - 11.5 服务熔断<br>
+熔断机制是应对雪崩效应的一种微服务链路保护机制。<br>
+当扇出链路的某个微服务不可用或者响应时间太长时，**会进行服务的降级，进而熔断该节点微服务的调用，快速返回"错误"的响应信息。**<br>
+当检测到该节点微服务调用响应正常后恢复调用链路。在SpringCloud框架里熔断机制通过Hystrix实现。<br>
+Hystrix会监控微服务间调用的状况，当失败的调用到一定阈值，缺省是5秒内20次调用失败就会启动熔断机制。<br>
+**熔断机制的注解是@HystrixCommand。**
+> - 11.5.1 创建maven子模块microservicecloud-provider-dept-hystrix-8001，microservicecloud-provider-dept-hystrix-8002
+> - 11.5.2 复制microservicecloud-provider-dept-8001的pom.xml、application.yml以及java目录下的全部文件
+> - 11.5.3 新模块pom.xml分别添加hystrix依赖
+```xml
+<!--hystrix-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-hystrix</artifactId>
+    </dependency>
+<!--hystrix-->
+```
+> - 11.5.3 新模块修改application.yml<br>
+```yaml
+eureka:
+  client:  
+    instance-id: microservicecloud-dept800a-hystrix #自定义服务名称信息(hystrix) (a:1,2)
+```
+> - 11.5.4 修改DeptController.java：使用@HystrixCommand注解，指定服务出现问题时使用的备选返回
+```java
+ /**
+ * 如果某个目标服务调用慢或者有大量超时，此时，熔断该服务的调用，对于后续调用请求，
+ * 不在继续调用目标服务，直接返回，快速释放资源。如果目标服务情况好转则恢复调用。
+ * HystrixCommand
+ */
+@GetMapping("/get/{id}")
+@HystrixCommand(fallbackMethod = "processHystrixGet")
+public Dept get(@PathVariable("id") Long id) {
+    Dept dept = deptService.get(id);
+    if (null == dept) {
+        //假设这里服务出问题了，会通过Hystrix服务熔断的@HystrixCommand注解进入到一个备选方案，而不是一直这里等待或者其他
+        //真像AOP
+        throw new RuntimeException("该ID：" + id + "没有对应的信息");
+    }
+    return dept;
+}
+
+public Dept processHystrixGet(@PathVariable("id") Long id) {
+    return new Dept().setDeptNo(id).setDeptName("该ID：" + id + "没有对应的信息,null --  @HystrixCommand").setDatabaseSource("no record in this database");
+}
+```
+> - 11.5.5 修改各自的主启动类DeptProviderHystrix800a_App(a:1,2):添加@EnableCircuitBreaker注解
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+
+/**
+ * 开启EnableCircuitBreaker功能
+ * 支持hystrix服务熔断功能
+ */
+@EnableEurekaClient
+@EnableDiscoveryClient
+@SpringBootApplication
+@EnableCircuitBreaker
+public class DeptProviderHystrix8001_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeptProviderHystrix8001_App.class, args);
+    }
+}
+```
+> - 11.5.6 服务熔断：服务端
