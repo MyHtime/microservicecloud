@@ -91,7 +91,7 @@
     </dependencyManagement>
 
     <build> <!--build构建信息-->
-        <finalName>${name}</finalName> <!--finalName：当前工程名称-->
+<!--        <finalName>${name}</finalName> &lt;!&ndash;finalName：当前工程名称&ndash;&gt;-->
         <resources> <!--resources：资源-->
             <resource> <!--resource：运行访问所有src/main/resource文件夹下的内容-->
                 <directory>src/main/resources</directory>

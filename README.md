@@ -776,3 +776,63 @@ public class DeptProviderHystrix8001_App {
 }
 ```
 > - 11.5.6 服务熔断：服务端
+> - 11.6 服务降级
+> - 11.6.1 整体资源快耗尽时，主动将某些服务先关掉，待渡过难关，再开启回来
+> - 11.6.2 服务降级处理是在客户端实现完成的，与服务端没有关系
+> - 11.6.3 在11.5，服务熔断时，没存在一个调用失败的方式，就会添加一个@HystrixCommand注解的备选方法，导致方法膨胀，提高耦合度。<br>
+类似于AOP，去降低耦合:织入 + 异常通知<br>
+> - 11.6.4 修改microservicecloud-api工程，根据已经有的DeptClientService接口新建一个实现了FallbackFactory接口的类DeptClientServiceFallbackFactory
+```java
+import cn.techpan.springcloud.entity.Dept;
+import feign.hystrix.FallbackFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+/**
+ * 对DeptClientService接口类的方法进行服务降级。
+ * 避免存在多个方法时，防止服务熔断在服务提供者出现大量使用@HystrixCommand的方法来降低耦合度（类似于AOP的通知）。
+ * 这里便是客户端的服务熔断。
+ * 假设provider某个关闭了，这里就降级了
+ * 也就是hystrix在客服端进行降级，服务端进行熔断
+ */
+@Component
+public class DeptClientServiceFallbackFactory implements FallbackFactory<DeptClientService> {
+    @Override
+    public DeptClientService create(Throwable cause) {
+        return new DeptClientService() {
+            @Override
+            public boolean add(Dept dept) {
+                return false;
+            }
+
+            @Override
+            public Dept get(Long id) {
+                return new Dept().setDeptNo(id).setDeptName("该ID" + id + "没有对应的信息，Consumer客户端提供的降级信息，此刻服务Provider已经关闭").setDatabaseSource("no database here");
+            }
+
+            @Override
+            public List<Dept> list() {
+                return null;
+            }
+        };
+    }
+}
+```
+> - 11.6.5 修改microservicecloud-api工程，DeptClientService接口在注解@FeignClient中添加fallbackFactory属性值 
+fallbackFactory:指定fallbackFactory，对这个接口类的方法进行降级。当出现问题时，会去DeptClientServiceFallbackFactory寻找对应的解决方法  
+@FeignClient(value = "MICROSERVICECLOUD-DEPT", fallbackFactory = DeptClientServiceFallbackFactory.class)  
+> - 11.6.6 microservicecloud-api mvn clean, maven install
+> - 11.6.7 修改客户端yml文件
+```yaml
+feign:
+  hystrix:
+    # 开启服务熔断
+    enabled: true
+```
+> - 11.6.7 此时服务端provider已经down了，但是我们做了服务降级处理，让客户端在服务端不可用时也会获得提示信息而不会挂起耗死服务器
+> - 11.6.8 便于多处调用，可在api module 创建服务fallback方法（也可以直接在dept-feign-80创feign创建接口）
+> - 11.6.9 客服端访问某个服务失败（系统紧张时，保证重要服务运行，关闭这个服务，保证正常运行）时，通过客户端的fallback备选方法去通知访问者，就是服务降级。<br>
+相对于服务熔断，它们处理的原理相同（类似于AOP的织入和异常返回【fallback】）。<br>
+熔断是在服务端多处绑定@HystrixCommand，导致方法膨胀，耦合过高。<br>
+降级是在客服端使用一个FallbackFactory<E>(E是某一类绑定的微服务)的实现类绑定一类服务，使得E内出现问题时，会主动到这个实现类寻找对应的fallback备选方法（类似于AOP的通知）去通知访问者，来降低耦合。

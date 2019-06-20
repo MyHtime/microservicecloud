@@ -11,9 +11,10 @@ import java.util.List;
 
 /**
  * 开启FeignClient，完成对服务提供方的接口绑定
+ * fallbackFactory:指定fallbackFactory，对这个接口类的方法进行降级。当出现问题时，会去DeptClientServiceFallbackFactory寻找对应的解决方法
  */
 @RequestMapping("/dept")
-@FeignClient(value = "MICROSERVICECLOUD-DEPT")
+@FeignClient(value = "MICROSERVICECLOUD-DEPT", fallbackFactory = DeptClientServiceFallbackFactory.class)
 public interface DeptClientService {
 
     /**
