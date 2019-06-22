@@ -18,6 +18,7 @@
         <module>microservicecloud-consumer-dept-feign-80</module>
         <module>microservicecloud-provider-dept-hystrix-8001</module>
         <module>microservicecloud-provider-dept-hystrix-8002</module>
+        <module>microservicecloud-consumer-hystrix-dashboard-9001</module>
     </modules>
 
     <name>microservicecloud</name>

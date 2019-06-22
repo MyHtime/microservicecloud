@@ -853,3 +853,50 @@ feign:
 > - 11.7.5 服务熔断、服务降级以及其他Hystrix提供的方案，都是可避免服务雪崩的方案。
 > - 11.7.5.1 服务熔断于服务端，某个服务错误（服务关闭）时，主动返回fallback备选方法通知
 > - 11.7.5.2 服务降级于客户端，它从整体考虑。某些情况下会关停部分服务，保证系统正常运行。同时对客户端访问这些关停服务时，做了客户端fallback返回
+> - 11.8 服务监控HystrixDashboard
+> - 11.8.1 准实时的调用监控（Hystrix Dashboard），Hystrix会持续地记录所有通过Hystrix发起的请求的执行信息，并以统计报表和图形的形式展示给用户，包括每秒执行多少请求多少成功，多少失败等。
+> - 11.8.2 使用
+> - 11.8.2.1 maven
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-hystrix</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-hystrix-dashboard</artifactId>
+</dependency>
+```
+> - 11.8.2.2 application.yml
+```yaml
+server:
+  port: 9001
+```
+> - 11.8.2.3 主程序
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
+
+/**
+ * EnableHystrixDashboard开启HystrixDashboard
+ */
+@SpringBootApplication
+@EnableHystrixDashboard
+public class DeptConsumerDashBoard9001_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeptConsumerDashBoard9001_App.class, args);
+    }
+}
+```
+> - 11.8.2.4 被监控的app需要的依赖
+```xml
+<!--actuator监控信息完善-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<!--actuator监控信息完善-->
+```
+> - 11.8.2.5 启动相应的微服务，打开监控页面即可
