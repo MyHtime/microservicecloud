@@ -900,3 +900,92 @@ public class DeptConsumerDashBoard9001_App {
 <!--actuator监控信息完善-->
 ```
 > - 11.8.2.5 启动相应的微服务，打开监控页面即可
+> - 12 [zuul路由网关](https://github.com/Netflix/zuul/wiki/Getting-Started)
+> - 12.1 Zuul包含了对请求的**路由**和**过滤**两个最主要的功能
+> - 12.1.1 路由功能负责将外部请求转发到具体的微服务实例上，是实现外部访问统一入口的基础
+> - 12.1.2 过滤器功能则负责对请求的处理过程进行干预，是实现请求校验、服务聚合等功能的基础
+> - 12.1.3 Zuul和Eureka进行整合，将Zuul自身注册为Eureka服务治理下的应用，同时从Eureka中获得其他微服务的消息，也即以后的访问微服务都是通过Zuul跳转后获得
+> - 12.1.4 提供=代理+路由+过滤三大功能
+> - 12.1.5 zuul会注册到Eureka server中，同时携带了负载均衡算法
+> - 12.2 how to use
+> - 12.2.1 maven依赖
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zuul</artifactId>
+</dependency>
+```
+> - 12.2.2 配置文件
+```yaml
+server:
+  port: 9527      #端口
+
+spring:
+  application:
+    name: microservicecloud-zuul-gateway #对外暴露的服务名
+
+eureka:
+  client:
+    service-url: # 注册到eureka server
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka,http://eureka7003.com:7003/eureka
+  instance:
+    instance-id: gateway-9527.com  # 自定义服务名称信息
+    prefer-ip-address: true        # #访问路径可以显示IP地址
+
+zuul: #zuul配置
+  prefix: /techpan # 前缀
+  #ignored-services: "*" #过滤所有服务名
+  ignored-services: microservicecloud-dept # 过滤/忽略的路径或者名字，即不让通过原服务名访问
+  routes:
+    # 代理名称 proxy.serviceId + proxy.path 为一个组合，表示path代理了服务id。设置ignored-services时，仅可通过 http://hostname:port/prefix/proxy.path/** 来访问
+    mydept.serviceId: microservicecloud-dept
+    mydept.path: /mydept/**
+    cc.serviceId: microservicecloud-dept
+    cc.path: /cc/**
+
+info:
+  app.name: atguigu-microcloud
+  company.name: www.atguigu.com
+  build.artifactId: ${project.artifactId}
+  build.version: ${project.version}
+```
+> - 12.2.3 主启动类需要@EnableZuulProxy
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
+
+/**
+ * 开启EnableZuulProxy支持，完成zuul路由网关功能
+ */
+@EnableZuulProxy
+@SpringBootApplication
+public class SpringCloudZuul9527_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SpringCloudZuul9527_App.class, args);
+    }
+}
+```
+> - 12.2.4 启动对应服务即可
+> - 12.3 代理访问
+> - 12.3.1 配置文件没有配置zuul时，可通过http://hostname:port/serviceId/**/ 来调用微服务
+> - 12.3.2 zuul配置为以下时，可通过http://hostname:port/serviceId/**/ 或者http://hostname:port/mydept/**
+```yaml
+zuul: 
+  routes: 
+    mydept.serviceId: microservicecloud-dept
+    mydept.path: /mydept/**
+```
+> - 12.3.3 zuul如果加上下面时，只能通过代理路径访问http://hostname:port/proxy.path/**
+```yaml
+zuul: 
+  ignored-services: microservicecloud-dept  #忽略某个服务
+  # ignored-services:  "*"               #忽略所有服务
+```
+> - 12.3.4 zuul如果加上下面时，访问服务需要带上前缀http://hostname:port/prefix/proxy.path/**
+```yaml
+zuul: 
+  prefix: /techpan # 前缀
+```
+> - 12.4 如果单机演示，需要修改hosts文件，增加内容127.0.0.1  myzuul.com

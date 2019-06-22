@@ -1,0 +1,32 @@
+server:
+  port: 9527      #端口
+
+spring:
+  application:
+    name: microservicecloud-zuul-gateway #对外暴露的服务名
+
+eureka:
+  client:
+    service-url: # 注册到eureka server
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka,http://eureka7003.com:7003/eureka
+  instance:
+    instance-id: gateway-9527.com  # 自定义服务名称信息
+    prefer-ip-address: true        # #访问路径可以显示IP地址
+
+zuul: #zuul配置
+  prefix: /techpan # 前缀
+  ignored-services: "*" #过滤所有服务名
+  #ignored-services: microservicecloud-dept # 过滤/忽略的路径或者名字，即不让通过原服务名访问
+  routes:
+    # 代理名称 proxy.serviceId + proxy.path 为一个组合，表示path代理了服务id。设置ignored-services时，仅可通过 http://hostname:port/prefix/proxy.path/** 来访问
+    mydept.serviceId: microservicecloud-dept
+    mydept.path: /mydept/**
+    cc.serviceId: microservicecloud-dept
+    cc.path: /cc/**
+
+info:
+  app.name: atguigu-microcloud
+  company.name: www.atguigu.com
+  build.artifactId: ${project.artifactId}
+  build.version: ${project.version}
+
